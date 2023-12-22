@@ -4,36 +4,35 @@ import (
 	"FileStore/db"
 	"FileStore/util"
 	"fmt"
-	"io/ioutil"
+	"github.com/gin-gonic/gin"
 	"net/http"
 	"time"
 )
 
 const pwd_salt = "*#890"
 
-func SignInHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		data, err := ioutil.ReadFile("./static/view/signin.html")
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.Write(data)
-		return
-	}
-	r.ParseForm()
-	username := r.Form.Get("username")
-	passwd := r.Form.Get("password")
+func SigninGetHandler(c *gin.Context) {
+	c.Redirect(http.StatusFound, "/static/view/signin.html")
+}
+func SigninPostHandler(c *gin.Context) {
+	username := c.Request.FormValue("username")
+	passwd := c.Request.FormValue("password")
 	enc_passwd := util.Sha1([]byte(passwd + pwd_salt))
 	passwd_check := db.UserSignin(username, enc_passwd)
 	if !passwd_check {
-		w.Write([]byte("SignIn Failed"))
+		c.JSON(http.StatusOK, gin.H{
+			"msg":  "Signin Failed!",
+			"code": -1,
+		})
 		return
 	}
 	token := GenToken(username)
 	res := db.UpdateToken(username, token)
 	if !res {
-		w.Write([]byte("Update Token Failed"))
+		c.JSON(http.StatusOK, gin.H{
+			"msg":  "Update Token Failed!",
+			"code": -2,
+		})
 		return
 	}
 	resp := util.RespMsg{
@@ -44,27 +43,24 @@ func SignInHandler(w http.ResponseWriter, r *http.Request) {
 			Username string
 			Token    string
 		}{
-			Location: "http://" + r.Host + "/static/view/home.html",
+			Location: "/static/view/home.html",
 			Username: username,
 			Token:    token,
 		},
 	}
-	w.Write(resp.JSONBytes())
+	c.Data(http.StatusOK, "application/json", resp.JSONBytes())
 }
 
-func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-	username := r.Form.Get("username")
-	/*token := r.Form.Get("token")
-	istokenvalid := IsTokenValid(token)
-	if !istokenvalid {
-		w.WriteHeader(http.StatusForbidden)
-		return
-	}*/
+func UserInfoHandler(c *gin.Context) {
+
+	username := c.Request.FormValue("username")
 	user, err := db.GetUserInfo(username)
 	if err != nil {
 		fmt.Println("Failed to get user info")
-		w.WriteHeader(http.StatusForbidden)
+		c.JSON(http.StatusForbidden, gin.H{
+			"msg":  "Get User Info Error",
+			"code": -1,
+		})
 		return
 	}
 	resp := util.RespMsg{
@@ -72,25 +68,22 @@ func UserInfoHandler(w http.ResponseWriter, r *http.Request) {
 		Msg:  "OK",
 		Data: user,
 	}
-	w.Write(resp.JSONBytes())
+	c.Data(http.StatusOK, "application/json", resp.JSONBytes())
 
 }
 
-func SignUpHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodGet {
-		data, err := ioutil.ReadFile("./static/view/signup.html")
-		if err != nil {
-			w.WriteHeader(http.StatusInternalServerError)
-			return
-		}
-		w.Write(data)
-		return
-	}
-	r.ParseForm()
-	username := r.Form.Get("username")
-	passwd := r.Form.Get("password")
+func SignupGetHandler(c *gin.Context) {
+	c.Redirect(http.StatusFound, "/static/view/signup.html")
+}
+func SignupPostHandler(c *gin.Context) {
+
+	username := c.Request.FormValue("username")
+	passwd := c.Request.FormValue("password")
 	if len(username) < 3 || len(passwd) < 5 {
-		w.Write([]byte("Invalid Parameter"))
+		c.JSON(http.StatusOK, gin.H{
+			"msg":  "Username or Password is too short, please retype again!",
+			"code": -1,
+		})
 		return
 	}
 	enc_pwd := util.Sha1([]byte(passwd + pwd_salt))
@@ -99,12 +92,14 @@ func SignUpHandler(w http.ResponseWriter, r *http.Request) {
 		resp := util.RespMsg{
 			Code: 0,
 			Msg:  "OK",
-			Data: "http://" + r.Host + "/user/signin",
+			Data: "/user/signin",
 		}
-
-		w.Write(resp.JSONBytes())
+		c.Data(http.StatusOK, "application/json", resp.JSONBytes())
 	} else {
-		w.Write([]byte("Failed"))
+		c.JSON(http.StatusOK, gin.H{
+			"msg":  "Signup Failed!",
+			"code": -2,
+		})
 	}
 
 }

@@ -102,9 +102,11 @@
                     alert(textStatus);
                 }
             },
-            success: function (body, textStatus, jqXHR) {
-                var resp = JSON.parse(body);
-                window.location.href = resp.data;
+            success: function (res, textStatus, jqXHR) {
+                if (res.code == 0){
+                    alert("注册成功");
+                    window.location.href = "/user/signin";
+                }
             }
         });
     }

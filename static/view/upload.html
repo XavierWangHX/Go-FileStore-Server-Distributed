@@ -76,11 +76,11 @@
         alert('请求报错信息: ' + JSON.stringify(err));
       },
       success: function (res) {
-
-          var resp = JSON.parse(res);
-          window.location.href = resp.data;
+        if (res.code == 0) {
+          alert("上传成功!");
+          window.location.href = "/static/view/home.html";
       }
-    });
+    }});
   }
 </script>
 

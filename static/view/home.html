@@ -38,7 +38,7 @@
           <td style="width: 3px;height:100%;">
             <div style="width:100%;height: 100%;background:rgb(202, 157, 248);"></div>
           </td>
-          <td style="text-align: top;">
+          <td style="text-align:center;">
             <div>文件列表
               <button class="btn btn-success" onclick="toUploadFile()" style="float: right;margin-right: 30px;">上传文件
               </button>
@@ -78,8 +78,14 @@
           alert(textStatus);
         }
       },
-      success: function (body, textStatus, jqXHR) {
-        var resp = JSON.parse(body);
+      success: function (body) {
+        var resp = body;
+        if (typeof (resp) == 'string') {
+          resp = JSON.parse(body);
+        }
+        if (resp.code == 10005) {
+          window.location.href = "/static/view/signin.html";
+        }
         document.getElementById("username").innerHTML = resp.data.Username;
         document.getElementById("regtime").innerHTML = resp.data.SignupAt;
         updateFileList();
@@ -92,7 +98,7 @@
       url: "/file/query?" + queryParams(),
       type: "POST",
       data: {
-        limit: 15
+        limit: 30
       },
       error: function (jqXHR, textStatus, errorThrown) {
         if (textStatus == "error") {
@@ -105,7 +111,7 @@
         if (!body) {
           return;
         }
-        var data = JSON.parse(body);
+        var data = body;
         if (!data || data.length <= 0) {
           return;
         }
